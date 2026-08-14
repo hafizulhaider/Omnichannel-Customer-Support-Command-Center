@@ -1,0 +1,298 @@
+{
+  "name": "OCSCC - 03 - Telegram Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b3610b23-87a5-41fe-864f-060e2937f2c2",
+      "name": "Telegram Trigger",
+      "webhookId": "c51d108e-6e4f-476a-a0c0-6248732eedd5",
+      "credentials": {
+        "telegramApi": {
+          "id": "zkTVNEcL1Vj6kyg6",
+          "name": "Telegram account 302"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "47faa720-52fc-421c-bf35-c06acbb7bd5b",
+              "name": "source",
+              "value": "telegram",
+              "type": "string"
+            },
+            {
+              "id": "3de7c5a3-7603-424a-aa11-9bb29fae5a7a",
+              "name": "customer_name",
+              "value": "={{ $json.message.from.first_name + \" \" + $json.message.from.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "19033c77-c1bf-4042-941e-d1c75aeeb2c3",
+              "name": "customer_email",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "4ccd782e-c468-4c4a-8937-8a53ee80266e",
+              "name": "customer_phone",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "9f2487fe-ddbb-4700-a5d5-63e03a251dfe",
+              "name": "=customer_channel_id",
+              "value": "={{ $json.message.from.id.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "4380c828-cad0-4996-89c3-20f0f903ce44",
+              "name": "subject",
+              "value": "Telegram message",
+              "type": "string"
+            },
+            {
+              "id": "c99b50b7-b70c-4745-b36a-62711955c8b0",
+              "name": "body",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "63fe76f3-1bcd-4d5c-b474-d6a752584024",
+              "name": "idempotency_key",
+              "value": "={{ \"telegram_\" + $json.message.message_id.toString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        144,
+        0
+      ],
+      "id": "310184b1-ee28-4dbe-8cdd-1e0cb2a1fbeb",
+      "name": "Set"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        0
+      ],
+      "id": "821e6876-da80-45ad-b9a7-949b54e0b102",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7e9d403c-bbe8-43dd-9cf8-d213ec09fc99",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        0
+      ],
+      "id": "6e15db88-b12e-4b1b-81a2-1a2c420e10d7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Set').item.json.source }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('Set').item.json.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Set').item.json.customer_email }}"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('Set').item.json.customer_phone }}"
+            },
+            {
+              "name": "customer_channel_id",
+              "value": "={{ $('Set').item.json.customer_channel_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Set').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Set').item.json.body }}"
+            },
+            {
+              "name": "idempotency_key",
+              "value": "={{ $('Set').item.json.idempotency_key }}"
+            },
+            {
+              "name": "status",
+              "value": "pending"
+            },
+            {
+              "name": "raw_payload",
+              "value": "={{ JSON.stringify($('Telegram Trigger').item.json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        768,
+        -64
+      ],
+      "id": "4d29479e-bb50-4f8c-ac94-0f9f2bf851e8",
+      "name": "HTTP Request1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "99089885-d0fb-43c4-a448-e91d6057ca95",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "fdFvQrVrLDRKxml1",
+  "tags": []
+}

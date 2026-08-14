@@ -1,0 +1,441 @@
+{
+  "name": "OCSCC - 12 - Agent Reply Dispatcher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        -64
+      ],
+      "id": "1e69a8b3-c6ee-4f1b-81e6-6e215ae6859b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "207e776d-4fca-4244-a274-29bf3c5923d3",
+      "name": "read agent messages",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        -64
+      ],
+      "id": "a5f2517f-a66c-492f-84d3-c095fa29d3d9",
+      "name": "get ticket",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('get ticket').item.json.source }}",
+                    "rightValue": "telegram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6d99bc53-b72f-4ebe-9c05-d89a64e0e5da"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "telegram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2561fead-858d-4546-8229-7689984e4085",
+                    "leftValue": "={{ $('get ticket').item.json.source }}",
+                    "rightValue": "email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        -64
+      ],
+      "id": "c52016a0-429e-4293-b7aa-09fb12d76ce4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('get ticket').item.json.customer_channel_id }}",
+        "text": "={{ $('read agent messages').item.json.body }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        -160
+      ],
+      "id": "9d450d4a-1e4f-45b8-b657-72bc54bb964e",
+      "name": "Send a text message",
+      "webhookId": "5edb11a8-7a21-4294-9975-fe640586a430",
+      "credentials": {
+        "telegramApi": {
+          "id": "zkTVNEcL1Vj6kyg6",
+          "name": "Telegram account 302"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('get ticket').item.json.customer_email }}",
+        "subject": "={{ \"Re: \" + $('get ticket').item.json.subject }}",
+        "emailType": "text",
+        "message": "={{ $('read agent messages').item.json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        32
+      ],
+      "id": "f7dab6e0-5b5d-414d-81b3-67d1745c9965",
+      "name": "Send a message",
+      "webhookId": "a86cbb1b-e7ec-424b-b645-f696d8d3794b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kAnRaxxecxBtbUsc",
+          "name": "Gmail account 657"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sent",
+              "value": "true"
+            },
+            {
+              "name": "sent_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        912,
+        -64
+      ],
+      "id": "cf1327d2-0bba-4694-9b0f-5fe31a72ff40",
+      "name": "mark as sent",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('read agent messages').item.json.ticket_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "=replied"
+            },
+            {
+              "name": "actor",
+              "value": "agent"
+            },
+            {
+              "name": "notes",
+              "value": "={{ \"Agent reply sent via \" + $('get ticket').item.json.source }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1136,
+        -64
+      ],
+      "id": "6524834c-1540-42ea-9925-6bf03e63eef9",
+      "name": "log reply event"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b7f935ed-d4a4-4c4c-834b-f573532b14a5",
+              "leftValue": "={{ $json.ticket_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        -64
+      ],
+      "id": "9aa0942a-f454-4420-9dcf-f7d78a511e06",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "read agent messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read agent messages": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get ticket": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "mark as sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "mark as sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark as sent": {
+      "main": [
+        [
+          {
+            "node": "log reply event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "get ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8b8c6864-1fee-4acc-82ac-b71d290ca5ac",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "smg0kzZkgrf05EWl",
+  "tags": []
+}

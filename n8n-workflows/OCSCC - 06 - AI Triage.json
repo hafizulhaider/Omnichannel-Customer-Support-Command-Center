@@ -1,0 +1,890 @@
+{
+  "name": "OCSCC - 06 - AI Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "707cafd1-811c-4aea-9ca2-e74c5ca32b74",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \"Customer name: \" + $json.customer_name + \"\\nSubject: \" + $json.subject + \"\\nMessage: \" + $json.body }}",
+        "options": {
+          "systemMessage": "You are a customer support triage AI for a helpdesk system.\n\nAnalyze the customer message and respond ONLY with a valid JSON object. No extra text, no markdown, no code blocks. Just raw JSON.\n\nReturn exactly this structure:\n{\n  \"category\": \"billing|technical|general|complaint\",\n  \"priority\": \"high|medium|low\",\n  \"sentiment\": \"positive|neutral|negative\",\n  \"confidence\": <number between 0 and 100>,\n  \"ai_summary\": \"<one sentence summary of the issue>\",\n  \"ai_reply_draft\": \"<professional, empathetic reply to the customer>\"\n}",
+          "maxIterations": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        -96
+      ],
+      "id": "a9de025a-d6dc-4308-9c6e-980e56626042",
+      "name": "AI Agent",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        416,
+        144
+      ],
+      "id": "f67b439d-a993-4f40-95aa-30dffc80b94d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "ailvBTX7nKPBAFaz",
+          "name": "Omnichannel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json;\n\n// Handle rate limit or API errors\nif (response.error || !response.output) {\n  const buffer = $('read buffer').item.json;\n  return {\n    json: {\n      buffer_id: buffer.id,\n      source: buffer.source,\n      customer_name: buffer.customer_name,\n      customer_email: buffer.customer_email,\n      customer_phone: buffer.customer_phone,\n      customer_channel_id: buffer.customer_channel_id,\n      subject: buffer.subject,\n      body: buffer.body,\n      category: 'general',\n      priority: 'medium',\n      sentiment: 'neutral',\n      confidence: 0,\n      ai_summary: 'AI unavailable - manual review required',\n      ai_reply_draft: 'Thank you for contacting us. An agent will review your message shortly.',\n      sla_due_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()\n    }\n  };\n}\n\nconst raw = response.output;\nconst cleaned = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parsed = {\n    category: 'general',\n    priority: 'medium',\n    sentiment: 'neutral',\n    confidence: 0,\n    ai_summary: 'Could not parse AI response',\n    ai_reply_draft: 'Thank you for contacting us. An agent will be with you shortly.'\n  };\n}\n\nconst buffer = $('read buffer').item.json;\n\nreturn {\n  json: {\n    buffer_id: buffer.id,\n    source: buffer.source,\n    customer_name: buffer.customer_name,\n    customer_email: buffer.customer_email,\n    customer_phone: buffer.customer_phone,\n    customer_channel_id: buffer.customer_channel_id,\n    subject: buffer.subject,\n    body: buffer.body,\n    category: parsed.category,\n    priority: parsed.priority,\n    sentiment: parsed.sentiment,\n    confidence: parsed.confidence,\n    ai_summary: parsed.ai_summary,\n    ai_reply_draft: parsed.ai_reply_draft,\n    sla_due_at: parsed.priority === 'high' \n      ? new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString()\n      : parsed.priority === 'low'\n      ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()\n      : new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -96
+      ],
+      "id": "7c1357f4-8b36-42ff-8b62-eacb0e4ff463",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_API"
+            },
+            {
+              "name": "Authorization",
+              "value": "YOUR_API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Code in JavaScript').item.json.source }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('Code in JavaScript').item.json.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Code in JavaScript').item.json.customer_email }}"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('Code in JavaScript').item.json.customer_phone }}"
+            },
+            {
+              "name": "customer_channel_id",
+              "value": "={{ $('Code in JavaScript').item.json.customer_channel_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Code in JavaScript').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Code in JavaScript').item.json.body }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $('Code in JavaScript').item.json.category }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $('Code in JavaScript').item.json.priority }}"
+            },
+            {
+              "name": "sentiment",
+              "value": "={{ $('Code in JavaScript').item.json.sentiment }}"
+            },
+            {
+              "name": "confidence",
+              "value": "={{ $('Code in JavaScript').item.json.confidence }}"
+            },
+            {
+              "name": "ai_summary",
+              "value": "={{ $('Code in JavaScript').item.json.ai_summary }}"
+            },
+            {
+              "name": "ai_reply_draft",
+              "value": "={{ $('Code in JavaScript').item.json.ai_reply_draft }}"
+            },
+            {
+              "name": "status",
+              "value": "open"
+            },
+            {
+              "name": "sla_due_at",
+              "value": "={{ $('Code in JavaScript').item.json.sla_due_at }}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{ $('find or create customer').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1520,
+        -80
+      ],
+      "id": "c3aac10e-cee4-4bfc-9442-c28aea7d26ed",
+      "name": "create ticket in Supabase"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2128,
+        -80
+      ],
+      "id": "d48abb86-b21c-490f-9ac3-19d48082fe53",
+      "name": "update buffer status to done"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "a5b8b5a9-31ed-4e70-ae98-05cc2462531f",
+      "name": "read buffer",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation,resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.customer_name }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "phone",
+              "value": "={{ $json.customer_phone }}"
+            },
+            {
+              "name": "last_seen_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1296,
+        -80
+      ],
+      "id": "8bf2e4c1-11ae-4352-9898-fae2bd83f15d",
+      "name": "find or create customer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('create ticket in Supabase').item.json.id }}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{ $('find or create customer').item.json.id }}"
+            },
+            {
+              "name": "sender_type",
+              "value": "customer"
+            },
+            {
+              "name": "sender_name",
+              "value": "={{ $('read buffer').item.json.customer_name }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('read buffer').item.json.body }}"
+            },
+            {
+              "name": "channel",
+              "value": "={{ $('read buffer').item.json.source }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1712,
+        -80
+      ],
+      "id": "ac1c5f2f-7f5d-4813-9256-8de5e84e8f25",
+      "name": "insert message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('create ticket in Supabase').item.json.id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "=created"
+            },
+            {
+              "name": "actor",
+              "value": "system"
+            },
+            {
+              "name": "notes",
+              "value": "={{ \"Ticket created via \" + $('read buffer').item.json.source + \". AI confidence: \" + $('Code in JavaScript').item.json.confidence + \"%\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1904,
+        -80
+      ],
+      "id": "7c89a134-8269-4639-932f-275e1e88cee9",
+      "name": "insert ticket event"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        752,
+        -560
+      ],
+      "id": "f0de2f6a-f2cf-48a4-a0b3-eef4bae69805",
+      "name": "check existing ticket",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "526ad096-e0bc-48ee-b559-c5e4489f9232",
+              "leftValue": "={{ $json.is_existing }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        -96
+      ],
+      "id": "3e0e8a2c-587a-4466-b82a-2f097b31473b",
+      "name": "is existing ticket",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $json.existing_ticket_id }}"
+            },
+            {
+              "name": "sender_type",
+              "value": "=customer"
+            },
+            {
+              "name": "sender_name",
+              "value": "={{ $('Code in JavaScript').item.json.customer_name }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Code in JavaScript').item.json.body }}"
+            },
+            {
+              "name": "channel",
+              "value": "={{ $('Code in JavaScript').item.json.source }}"
+            },
+            {
+              "name": "sent",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1296,
+        -256
+      ],
+      "id": "50eaa3d5-da29-4b09-8da1-835d13581c58",
+      "name": "add message to thread"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "awaiting_agent"
+            },
+            {
+              "name": "updated_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1520,
+        -256
+      ],
+      "id": "1ed9c7aa-b400-44dc-ac07-ca9e2181a56f",
+      "name": "update to awaiting agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('is existing ticket').item.json.existing_ticket_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "=customer_replied"
+            },
+            {
+              "name": "actor",
+              "value": "customer"
+            },
+            {
+              "name": "notes",
+              "value": "={{ \"Customer sent follow-up message: \" + $('Code in JavaScript').item.json.body }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1712,
+        -256
+      ],
+      "id": "fa00a3db-4322-451d-b301-61337e12bd5f",
+      "name": "log ticket event"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1904,
+        -256
+      ],
+      "id": "1cee5dfd-77a1-4ac4-809c-6f9724c81edb",
+      "name": "update buffer status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\n\nconst supabaseUrl = ';\nconst supabaseKey = 'API';\n\nconst response = await this.helpers.request({\n  method: 'GET',\n  url: `${supabaseUrl}/rest/v1/tickets`,\n  qs: {\n    customer_channel_id: `eq.${data.customer_channel_id}`,\n    status: `in.(open,awaiting_customer,awaiting_agent)`,\n    select: 'id,status,source',\n    limit: 1\n  },\n  headers: {\n    'apikey': supabaseKey,\n    'Authorization': `Bearer ${supabaseKey}`\n  },\n  json: true\n});\n\nconst tickets = Array.isArray(response) ? response : [];\nconst existingTicket = tickets.length > 0 ? tickets[0] : null;\n\nreturn {\n  json: {\n    ...data,\n    existing_ticket_id: existingTicket ? existingTicket.id : null,\n    is_existing: existingTicket ? true : false\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "c396d6c9-aada-4080-9033-bccd6a5b312c",
+      "name": "check thread"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "read buffer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "check thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create ticket in Supabase": {
+      "main": [
+        [
+          {
+            "node": "insert message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read buffer": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find or create customer": {
+      "main": [
+        [
+          {
+            "node": "create ticket in Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert message": {
+      "main": [
+        [
+          {
+            "node": "insert ticket event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert ticket event": {
+      "main": [
+        [
+          {
+            "node": "update buffer status to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check existing ticket": {
+      "main": [
+        []
+      ]
+    },
+    "is existing ticket": {
+      "main": [
+        [
+          {
+            "node": "add message to thread",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "find or create customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add message to thread": {
+      "main": [
+        [
+          {
+            "node": "update to awaiting agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update to awaiting agent": {
+      "main": [
+        [
+          {
+            "node": "log ticket event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log ticket event": {
+      "main": [
+        [
+          {
+            "node": "update buffer status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check thread": {
+      "main": [
+        [
+          {
+            "node": "is existing ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "546f7204-b9a8-444a-98bf-c7777f81676b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "aBpp6O08WA8zeFuu",
+  "tags": []
+}

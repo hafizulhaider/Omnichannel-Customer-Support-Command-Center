@@ -1,0 +1,162 @@
+{
+  "name": "OCSCC - 10 - SLA Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "191be714-983f-41aa-a2d6-09dca74261af",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "1096690284",
+        "text": "={{ \"⏰ SLA ALERT\\n\\nTicket is breaching SLA!\\n\\nFrom: \" + $('read tickets').item.json.customer_name + \"\\nChannel: \" + $('read tickets').item.json.source + \"\\nPriority: \" + $('read tickets').item.json.priority + \"\\nCategory: \" + $('read tickets').item.json.category + \"\\nSLA Due: \" + $('read tickets').item.json.sla_due_at + \"\\nStatus: \" + $('read tickets').item.json.status + \"\\n\\nMessage:\\n\" + $('read tickets').item.json.body + \"\\n\\nAI Summary:\\n\" + $('read tickets').item.json.ai_summary }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "2783bf83-3e29-4b06-9b6d-ce399f50eab9",
+      "name": "Send a text message",
+      "webhookId": "61ed70d8-5c7d-4d11-980a-de438bef7820",
+      "credentials": {
+        "telegramApi": {
+          "id": "zkTVNEcL1Vj6kyg6",
+          "name": "Telegram account 302"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "sla_breached"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        640,
+        0
+      ],
+      "id": "c80a9c4e-3726-4f97-a0e5-0f3b924dc956",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f127fc5a-1657-496d-aac6-0bd603b7923b",
+      "name": "read tickets",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "read tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read tickets": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7a5ca7ad-ec4d-45c7-a3a8-f6a0e108603d",
+  "meta": {
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "uts2x37Sdkh7Ki8w",
+  "tags": []
+}

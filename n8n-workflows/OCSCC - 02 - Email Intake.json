@@ -1,0 +1,301 @@
+{
+  "name": "OCSCC - 02 - Email Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2aef55ab-79b2-4ebe-b149-cb5e63bf3f7e",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kAnRaxxecxBtbUsc",
+          "name": "Gmail account 657"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "YOUR_URL",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "b5d3407f-c90e-453d-b65e-48a7ba65806a",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ebdea3e6-c0ef-4770-898a-089bd1902da2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ],
+      "id": "8b0ae484-0f28-4bb9-a7ec-2df250afe85d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_URL",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Set').item.json.source }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('Set').item.json.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Set').item.json.customer_email }}"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('Set').item.json.customer_phone }}"
+            },
+            {
+              "name": "customer_channel_id",
+              "value": "={{ $('Set').item.json.customer_channel_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Set').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Set').item.json.body }}"
+            },
+            {
+              "name": "idempotency_key",
+              "value": "={{ $('Set').item.json.idempotency_key }}"
+            },
+            {
+              "name": "status",
+              "value": "pending"
+            },
+            {
+              "name": "raw_payload",
+              "value": "={{ JSON.stringify($('Gmail Trigger').item.json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "731b483e-381d-4c0a-b5c7-35f5e6da407d",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c6c09afd-9bb8-4587-bdbb-3acc33db98ab",
+              "name": "=source",
+              "value": "email",
+              "type": "string"
+            },
+            {
+              "id": "79266f24-d5d1-4680-9e94-f2cbc30b3d2d",
+              "name": "=customer_name",
+              "value": "={{ $json.From.split('<')[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "fbf45c72-7978-44bf-a127-8d4d655aa93c",
+              "name": "customer_email",
+              "value": "={{ $json.From.split('<')[1].replace('>', '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "bbfede97-3905-46f0-847b-31b37ac79daf",
+              "name": "customer_phone",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "91a78dea-4c9a-495f-9071-1beb77e9d619",
+              "name": "subject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "5bc33270-f2c7-4cda-822b-97db1a046872",
+              "name": "body",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            },
+            {
+              "id": "8d958d5c-ba8b-4988-ad36-97ae6e4cc93f",
+              "name": "customer_channel_id",
+              "value": "={{ $json.From.split('<')[1].replace('>', '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "c6a67d3e-1c21-4e5b-b2d8-ac99437a9548",
+              "name": "idempotency_key",
+              "value": "={{ \"email_\" + $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "126b4a87-de5b-4183-aba5-a4fea9cb1364",
+      "name": "Set"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "70e31181-e6c4-4133-b599-d29ebdad9d00",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "zVt2j5DQPAxrfj3n",
+  "tags": []
+}

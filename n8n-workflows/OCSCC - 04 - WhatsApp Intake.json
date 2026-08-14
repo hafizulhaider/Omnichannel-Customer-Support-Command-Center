@@ -1,0 +1,359 @@
+{
+  "name": "OCSCC - 04 - WhatsApp Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "852c8570-f1b9-44db-b615-ce5418207a03",
+      "name": "Webhook",
+      "webhookId": "881b2b86-68c1-4e4b-9747-e91ba31bce5b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fc909e6d-9bc6-48f8-b19d-76033acf3dca",
+              "leftValue": "={{ $json.query[\"hub.mode\"] }}",
+              "rightValue": "subscribe",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2c1141cb-cfc0-4cd2-86ff-039468003b06",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query[\"hub.challenge\"] }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        -96
+      ],
+      "id": "c609b358-12bc-4d05-8f73-0867acd9efa3",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d83323ac-af34-44b6-bce2-ad322c5cfe6d",
+              "name": "source",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "1733a967-e6e4-4df7-9e12-8b11139398bd",
+              "name": "customer_name",
+              "value": "={{ $json.body.entry[0].changes[0].value.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d1283920-6fe5-43e2-bb6e-9c1de6372ab0",
+              "name": "customer_email",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "51dc0ac2-5835-479f-b516-7a7395bfb374",
+              "name": "customer_phone",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "e9ad6658-2026-404f-8878-6fc7457f91d3",
+              "name": "customer_channel_id",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "a74fc4a0-138a-4ca8-aea0-87f880be5f98",
+              "name": "subject",
+              "value": "WhatsApp message",
+              "type": "string"
+            },
+            {
+              "id": "0021d000-2da6-4c99-89ed-bbeade7e9e37",
+              "name": "body",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "5945a658-8450-4d29-9f85-253bb55f236d",
+              "name": "idempotency_key",
+              "value": "={{ \"whatsapp_\" + $json.body.entry[0].changes[0].value.messages[0].id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        96
+      ],
+      "id": "0bcc071d-275e-4ee2-b4fc-92a39682b2e7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        624,
+        80
+      ],
+      "id": "896d2f2d-0f78-4f5d-b12b-1078de3288e2",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7e9d403c-bbe8-43dd-9cf8-d213ec09fc99",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        32
+      ],
+      "id": "3bf47897-77aa-44fe-9783-12371ac85cf1",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Set').item.json.source }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('Set').item.json.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Set').item.json.customer_email }}"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('Set').item.json.customer_phone }}"
+            },
+            {
+              "name": "customer_channel_id",
+              "value": "={{ $('Set').item.json.customer_channel_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Set').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Set').item.json.body }}"
+            },
+            {
+              "name": "idempotency_key",
+              "value": "={{ $('Set').item.json.idempotency_key }}"
+            },
+            {
+              "name": "status",
+              "value": "pending"
+            },
+            {
+              "name": "raw_payload",
+              "value": "={{ JSON.stringify($('Webhook').item.json.body) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1072,
+        -16
+      ],
+      "id": "a0e3a5be-c279-41c4-93ac-74448d0e8d96",
+      "name": "HTTP Request1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "26e274f8-ff80-43a3-82a8-26925e7d089c",
+  "meta": {
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "xgrHpIAWQTK2nCvt",
+  "tags": []
+}

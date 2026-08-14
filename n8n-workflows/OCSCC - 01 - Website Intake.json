@@ -1,0 +1,290 @@
+{
+  "name": "OCSCC - 01 - Website Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "website-form",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f7b7018d-c951-4c75-8124-ae081656ff01",
+      "name": "Webhook",
+      "webhookId": "e3779dbe-1a6c-4df0-8db8-70c0dec21f29"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7133cb73-8411-4694-babe-cffd09e39526",
+              "name": "source",
+              "value": "form",
+              "type": "string"
+            },
+            {
+              "id": "b8858c5f-1fd0-4027-886d-25728b2bf610",
+              "name": "customer_name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc180519-635b-4061-90ea-28d65705ab60",
+              "name": "customer_email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "3881fc11-7b1e-4f21-8530-1e924380fecd",
+              "name": "customer_phone",
+              "value": "={{ $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "284cbb83-5e55-4dc6-8b36-4a80e2879d73",
+              "name": "subject",
+              "value": "={{ $json.body.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "ff8965ff-fdf6-4cca-aff6-b2be680d105e",
+              "name": "body",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "0771c0b5-b49d-431b-a7ea-28fbfcaf75e7",
+              "name": "customer_channel_id",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "5a299474-cac3-400b-a14b-0edc6c6689c8",
+              "name": "idempotency_key",
+              "value": "={{ \"form_\" + $json.body.email + \"_\" + $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "1fe88e69-bc86-4dfa-be83-2e3aabfdc5d2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "acfcb25a-1bc3-491e-89ee-fbde97a9d275",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1d688d97-d539-4c60-ac7d-8a96948d5835",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ],
+      "id": "2db0a9f3-34e8-4627-be9c-9110a8100dbc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Edit Fields').item.json.source }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $('Edit Fields').item.json.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Edit Fields').item.json.customer_email }}"
+            },
+            {
+              "name": "customer_phone",
+              "value": "={{ $('Edit Fields').item.json.customer_phone }}"
+            },
+            {
+              "name": "customer_channel_id",
+              "value": "={{ $('Edit Fields').item.json.customer_channel_id }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Edit Fields').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Edit Fields').item.json.body }}"
+            },
+            {
+              "name": "idempotency_key",
+              "value": "={ $('Edit Fields').item.json.idempotency_key }}"
+            },
+            {
+              "name": "status",
+              "value": "pending"
+            },
+            {
+              "name": "raw_payload",
+              "value": "={{ JSON.stringify($('Webhook').item.json.body) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "306a6e4a-1df5-431a-b36d-1c704eafed56",
+      "name": "HTTP Request1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e8f6ae76-000a-4b3d-badc-2d791202a98b",
+  "meta": {
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "uem19QI3vgUQQir6",
+  "tags": []
+}

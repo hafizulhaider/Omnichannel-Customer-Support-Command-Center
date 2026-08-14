@@ -1,0 +1,360 @@
+{
+  "name": "OCSCC - 08 - Auto Reply Email",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f9afed11-9689-45f3-8948-8db624514201",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "04e1394a-c963-4b51-89b0-9ed835230c46",
+      "name": "read email tickets",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3f5de0a4-fa63-4c27-bd8c-d29fd9106611",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "a38c4b04-7357-48aa-aa44-a69f386493d7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.customer_email }}",
+        "subject": "={{ \"Re: \" + $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.ai_reply_draft }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        -112
+      ],
+      "id": "0577b121-de6d-457b-8940-4fdbc624c15c",
+      "name": "Send a message",
+      "webhookId": "d8971a3d-5c77-4a98-95e3-5c95f655cdf7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kAnRaxxecxBtbUsc",
+          "name": "Gmail account 657"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "replied"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        -112
+      ],
+      "id": "c030e214-30d4-49c7-8eeb-a62e7d3c9dd5",
+      "name": "mark as replied",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('read email tickets').item.json.id }}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{ $('read email tickets').item.json.customer_id }}"
+            },
+            {
+              "name": "sender_type",
+              "value": "ai"
+            },
+            {
+              "name": "sender_name",
+              "value": "AI Assistant"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('read email tickets').item.json.ai_reply_draft }}"
+            },
+            {
+              "name": "channel",
+              "value": "email"
+            },
+            {
+              "name": "sent",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1056,
+        -128
+      ],
+      "id": "e4e8d800-104c-4497-814b-ec2e81051fe0",
+      "name": "insert message record"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('read email tickets').item.json.id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "replied"
+            },
+            {
+              "name": "actor",
+              "value": "ai"
+            },
+            {
+              "name": "notes",
+              "value": "={{ \"AI auto-reply sent via email. Confidence: \" + $('read email tickets').item.json.confidence + \"%\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1264,
+        -112
+      ],
+      "id": "4bf7afd2-15cd-42f8-bba3-7ec2052caf5d",
+      "name": "log ticket event"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "read email tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read email tickets": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "mark as replied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark as replied": {
+      "main": [
+        [
+          {
+            "node": "insert message record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert message record": {
+      "main": [
+        [
+          {
+            "node": "log ticket event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "57c002be-f116-4347-a706-226dc892f4f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "kRlcyc9kETEuycB6",
+  "tags": []
+}

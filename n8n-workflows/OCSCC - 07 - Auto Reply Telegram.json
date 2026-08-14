@@ -1,0 +1,445 @@
+{
+  "name": "OCSCC - 07 - Auto Reply Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "27d20090-109f-4939-8920-470cd5c7ae9d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6a8547e7-9740-4a9c-98d1-85b238fc09cf",
+      "name": "read open telegram tickets",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d944fff5-2b9c-4f9e-af88-41d1de7ba27d",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "a974162e-9bc3-4867-8cb3-807d7606cece",
+      "name": "has tickets"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "317b1250-54c3-4115-a116-7d65e9fc70d7",
+              "leftValue": "={{ $('read open telegram tickets').item.json.category }}",
+              "rightValue": "billing",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "3f196e56-20cc-46ab-bec1-3f086d4e0f4f",
+      "name": "is billing"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('read open telegram tickets').item.json.customer_channel_id }}",
+        "text": "={{ \"Hi \" + $('read open telegram tickets').item.json.customer_name + \", thank you for reaching out about your refund request. 🙏\\n\\nTo process this for you, we need a few details:\\n\\n1️⃣ Your phone number\\n2️⃣ Order number\\n3️⃣ Order date\\n4️⃣ Brief description of the issue\\n\\nPlease reply with these and we'll get started right away!\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        -192
+      ],
+      "id": "fab46ad0-c9aa-4b47-8a7c-9c00301f92e1",
+      "name": "send info request",
+      "webhookId": "d64e3171-5887-4de9-8979-d374e270dda1",
+      "credentials": {
+        "telegramApi": {
+          "id": "zkTVNEcL1Vj6kyg6",
+          "name": "Telegram account 302"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('read open telegram tickets').item.json.customer_channel_id }}",
+        "text": "={{ $('read open telegram tickets').item.json.ai_reply_draft }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        16
+      ],
+      "id": "82241a55-cacc-4b8c-bb32-2f74c15af13b",
+      "name": "send ai reply",
+      "webhookId": "a553f154-6fb5-405a-9da4-22f2db500e40",
+      "credentials": {
+        "telegramApi": {
+          "id": "zkTVNEcL1Vj6kyg6",
+          "name": "Telegram account 302"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "awaiting_customer"
+            },
+            {
+              "name": "replied_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1104,
+        -112
+      ],
+      "id": "2e7ac883-93e7-48fe-a58d-e2de76402e3c",
+      "name": "update status"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('read open telegram tickets').item.json.id }}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{ $('read open telegram tickets').item.json.customer_id }}"
+            },
+            {
+              "name": "sender_type",
+              "value": "ai"
+            },
+            {
+              "name": "sender_name",
+              "value": "=AI Assistant"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('read open telegram tickets').item.json.category === 'billing' ? \"Hi \" + $('read open telegram tickets').item.json.customer_name + \", thank you for reaching out about your refund request. To process this for you, we need: phone number, order number, order date, and description of the issue.\" : $('read open telegram tickets').item.json.ai_reply_draft }}"
+            },
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "sent",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1312,
+        -112
+      ],
+      "id": "965f9124-ac5c-436a-af00-9d947de7351a",
+      "name": "log reply message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "API"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer API"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $('read open telegram tickets').item.json.id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "=replied"
+            },
+            {
+              "name": "actor",
+              "value": "ai"
+            },
+            {
+              "name": "notes",
+              "value": "={{ \"Auto-reply sent via Telegram. Status set to awaiting_customer.\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1536,
+        -112
+      ],
+      "id": "84aea406-fb0b-4a48-8f72-f5a6dcb241fd",
+      "name": "log reply event"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "read open telegram tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read open telegram tickets": {
+      "main": [
+        [
+          {
+            "node": "has tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has tickets": {
+      "main": [
+        [
+          {
+            "node": "is billing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is billing": {
+      "main": [
+        [
+          {
+            "node": "send info request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send ai reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send info request": {
+      "main": [
+        [
+          {
+            "node": "update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send ai reply": {
+      "main": [
+        [
+          {
+            "node": "update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update status": {
+      "main": [
+        [
+          {
+            "node": "log reply message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log reply message": {
+      "main": [
+        [
+          {
+            "node": "log reply event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8843dbfd-c2b6-47be-8d0d-0ea02546c886",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f00bba974abf03cb5183d4d65f8a9645a781b04770df6a7d08284fca87d50b3"
+  },
+  "nodeGroups": [],
+  "id": "PT6SjYXpWDr8VJWJ",
+  "tags": []
+}
